@@ -3,501 +3,773 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JobFlow — Yvann Hounzandji</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<title>SAV Manager — Suivi produits retournés</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/tabler-icons.min.css">
 <style>
   :root {
-    --bg: #0a0a0f;
-    --surface: #12121a;
-    --surface2: #1a1a26;
-    --border: #2a2a3a;
-    --accent: #6c63ff;
-    --accent2: #ff6584;
-    --accent3: #43e8b0;
-    --text: #e8e8f0;
-    --muted: #7070a0;
-    --radius: 14px;
+    --bg: #ffffff;
+    --bg-sec: #f5f5f3;
+    --bg-ter: #eeede8;
+    --text: #1a1a19;
+    --text-sec: #6b6b67;
+    --text-ter: #9b9b97;
+    --border: rgba(0,0,0,0.12);
+    --border-sec: rgba(0,0,0,0.22);
+    --radius: 8px;
+    --radius-lg: 12px;
+    --font: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Mono', monospace;
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg-sec: #252523;
+      --bg-ter: #2e2e2b;
+      --text: #f0efea;
+      --text-sec: #9b9b97;
+      --text-ter: #6b6b67;
+      --border: rgba(255,255,255,0.1);
+      --border-sec: rgba(255,255,255,0.2);
+    }
   }
-  .app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 30px 20px 60px; }
-
-  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 36px; flex-wrap: wrap; gap: 16px; }
-  .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.6rem; letter-spacing: -1px; }
-  .logo span { color: var(--accent); }
-  .logo small { font-size: 0.63rem; color: var(--muted); font-weight: 400; font-family: 'DM Sans', sans-serif; display: block; letter-spacing: 0.05em; margin-top: -2px; }
-  .stats-header { display: flex; gap: 12px; flex-wrap: wrap; }
-  .stat-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 100px; padding: 8px 18px; font-size: 0.82rem; display: flex; align-items: center; gap: 8px; }
-  .stat-pill .dot { width: 8px; height: 8px; border-radius: 50%; }
-
-  .tabs { display: flex; gap: 6px; margin-bottom: 28px; background: var(--surface); padding: 6px; border-radius: 14px; border: 1px solid var(--border); width: fit-content; flex-wrap: wrap; }
-  .tab { padding: 10px 20px; border-radius: 10px; font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.88rem; cursor: pointer; border: none; background: transparent; color: var(--muted); transition: all 0.2s; }
-  .tab.active { background: var(--accent); color: white; }
-  .tab:hover:not(.active) { color: var(--text); }
-
-  .panel { display: none; }
-  .panel.active { display: block; }
-
-  .field { margin-bottom: 16px; }
-  .field label { display: block; font-size: 0.78rem; color: var(--muted); font-weight: 500; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
-  .field input, .field select, .field textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.92rem; outline: none; transition: border-color 0.2s; }
-  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
-  .field select option { background: var(--surface2); }
-  .field textarea { resize: vertical; }
-
-  .btn { padding: 11px 22px; border-radius: 10px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.88rem; cursor: pointer; border: none; transition: all 0.2s; white-space: nowrap; }
-  .btn-primary { background: var(--accent); color: white; }
-  .btn-primary:hover { background: #7c74ff; transform: translateY(-1px); }
-  .btn-success { background: var(--accent3); color: #0a0a0f; }
-  .btn-success:hover { filter: brightness(1.1); }
-  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
-  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
-
-  .search-controls { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; margin-bottom: 16px; display: grid; grid-template-columns: 1fr 1fr auto; gap: 14px; align-items: end; }
-  .hint { font-size: 0.8rem; color: var(--muted); margin-bottom: 20px; padding: 0 2px; }
-
-  .jobs-grid { display: flex; flex-direction: column; gap: 12px; }
-  .job-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 22px; display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; transition: border-color 0.2s, transform 0.15s; }
-  .job-card:hover { border-color: var(--accent); transform: translateX(4px); }
-  .job-card.alternance { border-left: 3px solid var(--accent); }
-  .job-card.weekend { border-left: 3px solid var(--accent2); }
-  .job-card.uk { border-left: 3px solid var(--accent3); }
-  .job-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; margin-bottom: 6px; }
-  .job-meta { display: flex; gap: 14px; flex-wrap: wrap; }
-  .job-meta span { font-size: 0.8rem; color: var(--muted); }
-  .badge { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-  .badge-alt { background: rgba(108,99,255,0.2); color: var(--accent); }
-  .badge-we { background: rgba(255,101,132,0.2); color: var(--accent2); }
-  .badge-uk { background: rgba(67,232,176,0.2); color: var(--accent3); }
-  .job-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-
-  .tracker-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
-  .tracker-title { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; }
-  .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-  .column { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; min-height: 300px; }
-  .col-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
-  .col-count { background: var(--surface2); border-radius: 100px; padding: 2px 9px; font-size: 0.78rem; color: var(--muted); }
-  .col-envoye .col-header { color: var(--accent); }
-  .col-relance .col-header { color: #f0c040; }
-  .col-entretien .col-header { color: var(--accent3); }
-  .col-refus .col-header { color: var(--accent2); }
-  .card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
-  .card-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
-  .card-company { font-size: 0.8rem; color: var(--muted); margin-bottom: 2px; }
-  .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
-  .card-date { font-size: 0.75rem; color: var(--muted); }
-  .card-move { display: flex; gap: 6px; }
-  .mini-btn { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
-  .mini-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .mini-btn.danger:hover { border-color: var(--accent2); color: var(--accent2); }
-
-  .lm-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .lm-form, .lm-output { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
-  .lm-form h3, .lm-output h3 { font-family: 'Syne', sans-serif; font-weight: 700; margin-bottom: 18px; font-size: 1rem; display: flex; align-items: center; gap: 10px; }
-  .lm-output { display: flex; flex-direction: column; }
-  .lm-text { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 18px; font-size: 0.88rem; line-height: 1.75; min-height: 340px; white-space: pre-wrap; overflow-y: auto; }
-  .lm-placeholder { color: var(--muted); font-style: italic; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; height: 100%; min-height: 200px; text-align: center; font-size: 0.9rem; }
-  .lm-actions { display: flex; gap: 10px; margin-top: 14px; }
-  .profile-tag { background: rgba(108,99,255,0.1); border: 1px solid rgba(108,99,255,0.25); color: #b0a8ff; border-radius: 10px; padding: 12px 14px; font-size: 0.81rem; margin-bottom: 18px; line-height: 1.6; }
-
-  .spinner { width: 18px; height: 18px; border: 2px solid rgba(108,99,255,0.3); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-  .modal-overlay.show { display: flex; }
-  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 30px; width: 90%; max-width: 480px; animation: slideUp 0.25s ease; }
-  .modal h3 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.2rem; margin-bottom: 20px; }
-  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-  .success-msg { background: rgba(67,232,176,0.1); border: 1px solid rgba(67,232,176,0.3); color: var(--accent3); border-radius: 8px; padding: 10px 16px; font-size: 0.85rem; margin-top: 10px; display: none; }
-  .empty-col { color: var(--muted); font-size: 0.82rem; text-align: center; padding: 20px 0; }
-
-  @media (max-width: 780px) {
-    .search-controls { grid-template-columns: 1fr; }
-    .kanban { grid-template-columns: 1fr 1fr; }
-    .lm-section { grid-template-columns: 1fr; }
-    .job-card { grid-template-columns: 1fr; }
-    .job-actions { justify-content: flex-start; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background: var(--bg-ter);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
   }
-  @media (max-width: 480px) { .kanban { grid-template-columns: 1fr; } }
+  /* TOPBAR */
+  .topbar {
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .topbar-brand i { font-size: 20px; color: var(--text-sec); }
+  .topbar-count {
+    font-size: 12px;
+    background: var(--bg-sec);
+    border: 0.5px solid var(--border);
+    border-radius: 999px;
+    padding: 3px 10px;
+    color: var(--text-sec);
+  }
+  /* LAYOUT */
+  .container { max-width: 780px; margin: 0 auto; padding: 2rem 1.25rem; }
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 0;
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 400;
+    background: transparent;
+    color: var(--text-sec);
+    border: none;
+    cursor: pointer;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: var(--font);
+  }
+  .tab:not(:last-child) { border-right: 0.5px solid var(--border); }
+  .tab.active { background: var(--bg-sec); color: var(--text); font-weight: 500; }
+  .section { display: none; }
+  .section.active { display: block; }
+  /* FORM */
+  .card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-sec);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .field { margin-bottom: 1rem; }
+  .field:last-child { margin-bottom: 0; }
+  label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-sec);
+    margin-bottom: 5px;
+  }
+  input[type=text], input[type=date], select, textarea {
+    width: 100%;
+    background: var(--bg-sec);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 9px 12px;
+    font-size: 14px;
+    color: var(--text);
+    font-family: var(--font);
+    outline: none;
+    transition: border-color .15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--border-sec);
+    background: var(--bg);
+  }
+  textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 500px) { .row { grid-template-columns: 1fr; } }
+  /* STATUS */
+  .status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .status-btn {
+    padding: 10px 8px;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 13px;
+    cursor: pointer;
+    text-align: center;
+    background: var(--bg-sec);
+    color: var(--text-sec);
+    transition: all .15s;
+    font-family: var(--font);
+    line-height: 1.4;
+  }
+  .status-btn i { display: block; font-size: 18px; margin-bottom: 4px; }
+  .status-btn:hover { border-color: var(--border-sec); }
+  .status-btn.sel-bon { background: #EAF3DE; border-color: #639922; color: #3B6D11; }
+  .status-btn.sel-moyen { background: #FAEEDA; border-color: #BA7517; color: #854F0B; }
+  .status-btn.sel-mauvais { background: #FCEBEB; border-color: #A32D2D; color: #791F1F; }
+  .status-btn.sel-irreparable { background: #2e2e2b; border-color: #5F5E5A; color: #D3D1C7; }
+  /* PHOTO */
+  .photo-zone {
+    border: 1px dashed var(--border-sec);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    background: var(--bg-sec);
+    position: relative;
+    transition: all .15s;
+  }
+  .photo-zone:hover { border-color: var(--text-sec); }
+  .photo-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .photo-zone i { font-size: 28px; color: var(--text-sec); display: block; margin-bottom: 6px; }
+  .photo-zone p { font-size: 13px; color: var(--text-sec); }
+  .photo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
+  @media (max-width: 500px) { .photo-grid { grid-template-columns: repeat(3, 1fr); } }
+  .photo-thumb {
+    position: relative; aspect-ratio: 1;
+    border-radius: var(--radius); overflow: hidden;
+    border: 0.5px solid var(--border);
+  }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-del {
+    position: absolute; top: 4px; right: 4px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: rgba(0,0,0,0.65); color: #fff; border: none;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+  }
+  /* BUTTONS */
+  .btn-primary {
+    width: 100%; padding: 11px;
+    background: var(--text); border: none; border-radius: var(--radius);
+    font-size: 14px; cursor: pointer; color: var(--bg);
+    font-family: var(--font); font-weight: 500;
+    transition: opacity .15s; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-secondary {
+    padding: 8px 14px; background: var(--bg-sec);
+    border: 0.5px solid var(--border); border-radius: var(--radius);
+    font-size: 13px; cursor: pointer; color: var(--text);
+    font-family: var(--font); transition: all .15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-secondary:hover { border-color: var(--border-sec); }
+  /* NOTICE */
+  .notice {
+    background: var(--bg-sec); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px;
+    font-size: 13px; color: var(--text-sec);
+    display: flex; align-items: center; gap: 8px; margin-bottom: 1rem;
+  }
+  /* PRODUCT LIST */
+  .products-list { display: flex; flex-direction: column; gap: 10px; }
+  .prod-card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .prod-card:hover { border-color: var(--border-sec); }
+  .prod-icon {
+    width: 40px; height: 40px; flex-shrink: 0;
+    border-radius: var(--radius); background: var(--bg-sec);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-sec);
+  }
+  .prod-icon i { font-size: 20px; }
+  .prod-info { flex: 1; min-width: 0; }
+  .prod-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .prod-sub { font-size: 12px; color: var(--text-sec); margin-top: 2px; }
+  .badge {
+    display: inline-block; padding: 3px 9px;
+    border-radius: 999px; font-size: 11px; font-weight: 500; white-space: nowrap;
+  }
+  .b-bon { background: #EAF3DE; color: #3B6D11; }
+  .b-moyen { background: #FAEEDA; color: #854F0B; }
+  .b-mauvais { background: #FCEBEB; color: #791F1F; }
+  .b-irreparable { background: #D3D1C7; color: #2C2C2A; }
+  .prod-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .icon-btn {
+    width: 32px; height: 32px;
+    border: 0.5px solid var(--border); border-radius: var(--radius);
+    background: var(--bg-sec); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-sec); transition: all .15s; font-size: 15px;
+  }
+  .icon-btn:hover { border-color: var(--border-sec); color: var(--text); }
+  .modal-action-btns { display: flex; gap: 8px; margin-top: 1rem; }
+  .modal-action-btns button {
+    flex: 1; padding: 10px 8px;
+    border: 0.5px solid var(--border); border-radius: var(--radius);
+    font-size: 13px; cursor: pointer; font-family: var(--font);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: var(--bg-sec); color: var(--text); transition: all .15s;
+  }
+  .modal-action-btns .btn-del { background: #FCEBEB; border-color: #A32D2D; color: #791F1F; }
+  @media (max-width: 600px) { .prod-actions { display: none; } }
+  /* EMPTY */
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--text-sec); }
+  .empty i { font-size: 40px; display: block; margin-bottom: 10px; opacity: .5; }
+  .empty p { font-size: 14px; }
+  /* REPORT */
+  .report-box {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--text);
+    font-family: var(--font-mono);
+    white-space: pre-wrap;
+    max-height: 420px;
+    overflow-y: auto;
+  }
+  .report-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .report-actions button {
+    flex: 1; padding: 9px;
+    border: 0.5px solid var(--border); border-radius: var(--radius);
+    font-size: 13px; cursor: pointer;
+    background: var(--bg-sec); color: var(--text);
+    font-family: var(--font); transition: all .15s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .report-actions button:hover { border-color: var(--border-sec); }
+  /* MODAL */
+  .modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999; padding: 1rem;
+  }
+  .modal {
+    background: var(--bg);
+    border-radius: var(--radius-lg);
+    border: 0.5px solid var(--border);
+    padding: 1.5rem;
+    width: 100%; max-width: 580px;
+    max-height: 88vh; overflow-y: auto;
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 1.25rem;
+  }
+  .modal-header h3 { font-size: 16px; font-weight: 500; }
+  .modal-close {
+    background: var(--bg-sec); border: 0.5px solid var(--border);
+    border-radius: var(--radius); cursor: pointer; color: var(--text-sec);
+    width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0; margin-left: 12px;
+  }
+  .detail-row {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 9px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; gap: 12px;
+  }
+  .detail-label { color: var(--text-sec); flex-shrink: 0; }
+  .detail-val { text-align: right; word-break: break-word; max-width: 60%; }
+  .detail-photos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+  .detail-photos img {
+    width: 100%; aspect-ratio: 1; object-fit: cover;
+    border-radius: var(--radius); border: 0.5px solid var(--border); cursor: pointer;
+  }
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  @media (max-width: 500px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card {
+    background: var(--bg); border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg); padding: 14px;
+  }
+  .stat-label { font-size: 11px; color: var(--text-sec); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+  .stat-val { font-size: 24px; font-weight: 600; }
+  /* SEARCH */
+  .search-wrap { position: relative; margin-bottom: 1rem; }
+  .search-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--text-ter); }
+  .search-wrap input { padding-left: 36px; background: var(--bg); }
+  /* PRINT */
+  @media print {
+    body { background: white; }
+    .topbar, .tabs, .section:not(.active), .prod-actions, .report-actions { display: none !important; }
+    .report-box { max-height: none; border: none; font-size: 12px; }
+  }
 </style>
 </head>
 <body>
-<div class="app">
 
-  <header>
-    <div class="logo">
-      Job<span>Flow</span> ⚡
-      <small>YVANN HOUNZANDJI — Bachelor Commerce International · ESG Bordeaux</small>
-    </div>
-    <div class="stats-header">
-      <div class="stat-pill"><div class="dot" style="background:var(--accent)"></div><span id="stat-alt">0 alternances</span></div>
-      <div class="stat-pill"><div class="dot" style="background:var(--accent2)"></div><span id="stat-we">0 jobs WE</span></div>
-      <div class="stat-pill"><div class="dot" style="background:var(--accent3)"></div><span id="stat-total">0 candidatures</span></div>
-    </div>
-  </header>
+<div class="topbar">
+  <a class="topbar-brand" href="#">
+    <i class="ti ti-tools"></i>
+    SAV Manager
+  </a>
+  <span class="topbar-count" id="top-count">0 produit</span>
+</div>
 
+<div class="container">
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('offres',this)">🔍 Offres</button>
-    <button class="tab" onclick="switchTab('tracker',this)">📋 Tracker</button>
-    <button class="tab" onclick="switchTab('lm',this)">✉️ Lettre de motivation</button>
+    <button class="tab active" onclick="switchTab('form')"><i class="ti ti-plus"></i> Nouveau produit</button>
+    <button class="tab" onclick="switchTab('list')"><i class="ti ti-list"></i> Produits <span id="count-badge"></span></button>
+    <button class="tab" onclick="switchTab('reports')"><i class="ti ti-file-description"></i> Rapports</button>
   </div>
 
-  <!-- OFFRES -->
-  <div class="panel active" id="panel-offres">
-    <div class="search-controls">
+  <!-- FORM -->
+  <div id="s-form" class="section active">
+    <div class="notice"><i class="ti ti-info-circle"></i> Remplis les informations du produit retourné en SAV</div>
+
+    <div class="card">
+      <p class="card-title"><i class="ti ti-id-badge"></i> Identification</p>
+      <div class="row">
+        <div class="field"><label>Référence / N° dossier</label><input type="text" id="f-ref" placeholder="SAV-2026-001"></div>
+        <div class="field"><label>Date de retour</label><input type="date" id="f-date"></div>
+      </div>
+      <div class="field"><label>Nom du produit</label><input type="text" id="f-name" placeholder="Ex : Panneau solaire 400W Monocrystallin JA Solar"></div>
+      <div class="row">
+        <div class="field"><label>Marque / Fabricant</label><input type="text" id="f-brand" placeholder="Ex : JA Solar, SolaX, Fronius..."></div>
+        <div class="field"><label>Numéro de série</label><input type="text" id="f-serial" placeholder="Ex : SN-78493021"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-title"><i class="ti ti-user"></i> Intervenants</p>
+      <div class="row">
+        <div class="field"><label>Client</label><input type="text" id="f-client" placeholder="Nom du client"></div>
+        <div class="field"><label>Technicien SAV</label><input type="text" id="f-tech" placeholder="Votre nom"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-title"><i class="ti ti-activity"></i> État du produit</p>
+      <div class="status-grid">
+        <button class="status-btn" onclick="setStatus('bon',this)"><i class="ti ti-circle-check"></i>Bon état</button>
+        <button class="status-btn" onclick="setStatus('moyen',this)"><i class="ti ti-alert-triangle"></i>État moyen</button>
+        <button class="status-btn" onclick="setStatus('mauvais',this)"><i class="ti ti-alert-circle"></i>Mauvais état</button>
+        <button class="status-btn" onclick="setStatus('reparable',this)"><i class="ti ti-tool"></i>Réparable</button>
+        <button class="status-btn" onclick="setStatus('irreparable',this)" style="grid-column:span 2"><i class="ti ti-ban"></i>Irréparable</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-title"><i class="ti ti-clipboard-text"></i> Diagnostic</p>
+      <div class="field"><label>Description du problème constaté</label><textarea id="f-prob" placeholder="Décrire le défaut, les symptômes, les conditions d'apparition, les tests effectués..."></textarea></div>
+      <div class="field"><label>Action réalisée / préconisée</label><textarea id="f-action" placeholder="Remplacement de pièce, réparation, retour fabricant, refus de prise en charge..."></textarea></div>
+      <div class="field"><label>Notes internes (facultatif)</label><textarea id="f-notes" placeholder="Remarques complémentaires, références de pièces, délais, contacts..." style="min-height:60px"></textarea></div>
+    </div>
+
+    <div class="card">
+      <p class="card-title"><i class="ti ti-photo"></i> Photos</p>
+      <div class="photo-zone" id="photo-zone">
+        <input type="file" accept="image/*" multiple onchange="addPhotos(event)">
+        <i class="ti ti-photo-plus"></i>
+        <p>Clique ou dépose tes photos ici</p>
+        <p style="font-size:11px;color:var(--text-ter);margin-top:4px">JPG, PNG — plusieurs fichiers acceptés</p>
+      </div>
+      <div class="photo-grid" id="photo-grid"></div>
+      <p id="photo-count" style="font-size:12px;color:var(--text-sec);margin-top:8px"></p>
+    </div>
+
+    <button class="btn-primary" onclick="saveProduct()"><i class="ti ti-device-floppy"></i> Enregistrer le produit SAV</button>
+  </div>
+
+  <!-- LIST -->
+  <div id="s-list" class="section">
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="search-wrap">
+      <i class="ti ti-search"></i>
+      <input type="text" id="search-input" placeholder="Rechercher par nom, référence, client..." oninput="renderList()">
+    </div>
+    <div id="prod-list" class="products-list"></div>
+  </div>
+
+  <!-- REPORTS -->
+  <div id="s-reports" class="section">
+    <div class="card">
+      <p class="card-title"><i class="ti ti-file-description"></i> Générer un rapport</p>
       <div class="field">
-        <label>Poste / Métier</label>
-        <input type="text" id="search-poste" value="Commerce International" placeholder="ex: Business Developer, Chargé marketing...">
-      </div>
-      <div class="field">
-        <label>Zone de recherche</label>
-        <select id="search-zone">
-          <option value="all">Tout afficher</option>
-          <option value="alternance-fr">🇫🇷 Alternance — France entière</option>
-          <option value="alternance-uk">🇬🇧 Alternance — Angleterre</option>
-          <option value="weekend">🍷 Job week-end — Bordeaux</option>
-        </select>
-      </div>
-      <div>
-        <button class="btn btn-primary" onclick="loadJobs()" style="width:100%;padding:13px 22px;">🔍 Rechercher</button>
+        <label>Sélectionner un produit</label>
+        <select id="report-picker" onchange="generateReport()"><option value="">-- Choisir un produit --</option></select>
       </div>
     </div>
-    <p class="hint">💡 Clique sur <strong style="color:var(--text)">Postuler →</strong> pour ouvrir l'offre directement sur la plateforme. Clique sur <strong style="color:var(--text)">+ Tracker</strong> pour la sauvegarder.</p>
-    <div class="jobs-grid" id="jobs-list"></div>
+    <div id="report-output" style="display:none">
+      <div class="report-box" id="report-content"></div>
+      <div class="report-actions">
+        <button onclick="copyReport()"><i class="ti ti-copy"></i> Copier</button>
+        <button onclick="printReport()"><i class="ti ti-printer"></i> Imprimer</button>
+        <button onclick="exportTxt()"><i class="ti ti-download"></i> Télécharger .txt</button>
+      </div>
+    </div>
+    <div id="report-empty" class="empty"><i class="ti ti-file-off"></i><p>Enregistre un produit pour générer son rapport</p></div>
   </div>
+</div>
 
-  <!-- TRACKER -->
-  <div class="panel" id="panel-tracker">
-    <div class="tracker-header">
-      <div class="tracker-title">📋 Mes candidatures</div>
-      <button class="btn btn-success" onclick="openAddModal()">+ Ajouter manuellement</button>
-    </div>
-    <div class="kanban">
-      <div class="column col-envoye">
-        <div class="col-header"><span>📤 Envoyée</span><span class="col-count" id="cnt-envoye">0</span></div>
-        <div id="col-envoye-cards"></div>
+<!-- DETAIL MODAL -->
+<div id="detail-modal" style="display:none">
+  <div class="modal-bg" onclick="closeModalBg(event)">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">Détail produit</h3>
+        <button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button>
       </div>
-      <div class="column col-relance">
-        <div class="col-header"><span>🔔 Relance</span><span class="col-count" id="cnt-relance">0</span></div>
-        <div id="col-relance-cards"></div>
-      </div>
-      <div class="column col-entretien">
-        <div class="col-header"><span>🎯 Entretien</span><span class="col-count" id="cnt-entretien">0</span></div>
-        <div id="col-entretien-cards"></div>
-      </div>
-      <div class="column col-refus">
-        <div class="col-header"><span>❌ Refus</span><span class="col-count" id="cnt-refus">0</span></div>
-        <div id="col-refus-cards"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- LM -->
-  <div class="panel" id="panel-lm">
-    <div class="lm-section">
-      <div class="lm-form">
-        <h3>📝 Générer ma lettre</h3>
-        <div class="profile-tag">
-          👤 <strong>Yvann Hounzandji</strong><br>
-          Business Developer chez Koneksun (alternance, depuis sept. 2024) · BTS MCO Pigier Bègles · Bachelor Commerce International ESG Bordeaux 2026–2027 · Anglais B1 · Permis B véhiculé · Lormont (33)
-        </div>
-        <div class="field">
-          <label>Poste visé</label>
-          <input type="text" id="lm-poste" placeholder="ex: Chargé de développement commercial international">
-        </div>
-        <div class="field">
-          <label>Entreprise</label>
-          <input type="text" id="lm-entreprise" placeholder="ex: Décathlon, LVMH, Castorama...">
-        </div>
-        <div class="field">
-          <label>Type de contrat</label>
-          <select id="lm-type">
-            <option value="alternance (rythme 3 jours entreprise / 2 jours formation)">Alternance (3j/2j)</option>
-            <option value="job étudiant week-end à Bordeaux">Job étudiant week-end — Bordeaux</option>
-            <option value="stage">Stage</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Secteur / activité de l'entreprise (optionnel)</label>
-          <input type="text" id="lm-secteur" placeholder="ex: distribution internationale, e-commerce...">
-        </div>
-        <div class="field">
-          <label>Compétences à mettre en avant</label>
-          <input type="text" id="lm-skills" value="Prospection terrain, CRM Odoo, relation client, SMO/SEA/SEO, sens commercial, autonomie">
-        </div>
-        <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="generateLM()">✨ Générer avec l'IA</button>
-        <div class="success-msg" id="lm-success">✅ Lettre copiée dans le presse-papier !</div>
-      </div>
-
-      <div class="lm-output">
-        <h3>📄 Ta lettre <span id="lm-spinner" style="display:none"><span class="spinner"></span></span></h3>
-        <div class="lm-text" id="lm-result">
-          <div class="lm-placeholder">
-            <span style="font-size:2rem;">✉️</span>
-            Remplis le poste et l'entreprise,<br>puis clique sur <strong style="color:var(--text)">"Générer avec l'IA"</strong>
-          </div>
-        </div>
-        <div class="lm-actions">
-          <button class="btn btn-outline" onclick="copyLM()">📋 Copier</button>
-          <button class="btn btn-outline" onclick="generateLM()">🔄 Régénérer</button>
-        </div>
-      </div>
+      <div id="modal-body"></div>
     </div>
   </div>
 </div>
 
-<!-- MODAL -->
-<div class="modal-overlay" id="add-modal">
-  <div class="modal">
-    <h3>+ Nouvelle candidature</h3>
-    <div class="field"><label>Poste</label><input type="text" id="m-poste" placeholder="ex: Business Developer"></div>
-    <div class="field"><label>Entreprise</label><input type="text" id="m-entreprise" placeholder="ex: Décathlon"></div>
-    <div class="field">
-      <label>Type</label>
-      <select id="m-type">
-        <option value="alternance">🇫🇷 Alternance — France</option>
-        <option value="uk">🇬🇧 Alternance — UK</option>
-        <option value="weekend">🍷 Job week-end — Bordeaux</option>
-      </select>
-    </div>
-    <div class="field"><label>Lien de l'offre (optionnel)</label><input type="url" id="m-link" placeholder="https://..."></div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeAddModal()">Annuler</button>
-      <button class="btn btn-success" onclick="addCandidature()">Ajouter ✓</button>
-    </div>
-  </div>
+<!-- LIGHTBOX -->
+<div id="lightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;align-items:center;justify-content:center;cursor:pointer" onclick="document.getElementById('lightbox').style.display='none'">
+  <img id="lightbox-img" style="max-width:92%;max-height:92vh;border-radius:8px;object-fit:contain">
 </div>
 
 <script>
-let candidatures = JSON.parse(localStorage.getItem('jobflow_yvann') || '[]');
-const STATUSES = ['envoye','relance','entretien','refus'];
+let products = [];
+let currentStatus = '';
+let currentPhotos = [];
+let editIndex = -1;
 
-function switchTab(tab, btn) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('panel-' + tab).classList.add('active');
-  btn.classList.add('active');
-  if (tab === 'tracker') renderTracker();
+try { products = JSON.parse(localStorage.getItem('sav_products') || '[]'); } catch(e) { products = []; }
+
+const statusLabel = { bon:'Bon état', moyen:'État moyen', mauvais:'Mauvais état', irreparable:'Irréparable', reparable:'Réparable', 'non défini':'Non défini' };
+const badgeClass = { bon:'b-bon', moyen:'b-moyen', mauvais:'b-mauvais', irreparable:'b-irreparable', reparable:'b-moyen', 'non défini':'b-moyen' };
+
+function save() { localStorage.setItem('sav_products', JSON.stringify(products)); }
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((b,i) => b.classList.toggle('active', ['form','list','reports'][i]===t));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('s-'+t).classList.add('active');
+  if(t==='list') renderList();
+  if(t==='reports') renderReportPicker();
 }
 
-function getPlatforms(poste, zone) {
-  const q = encodeURIComponent(poste);
-  const qAlt = encodeURIComponent(poste + ' alternance');
-  const qWE  = encodeURIComponent(poste + ' étudiant week-end');
-  const qUK  = encodeURIComponent(poste + ' internship');
-
-  const FR = [
-    { name:'Indeed',          icon:'🔷', url:`https://fr.indeed.com/jobs?q=${qAlt}&l=France` },
-    { name:'LinkedIn',        icon:'💼', url:`https://www.linkedin.com/jobs/search/?keywords=${qAlt}&location=France` },
-    { name:'HelloWork',       icon:'🟢', url:`https://www.hellowork.com/fr-fr/emploi/recherche.html?k=${qAlt}&l=France` },
-    { name:'1jeune1solution', icon:'🎓', url:`https://www.1jeune1solution.gouv.fr/apprentissage?metier=${q}` },
-    { name:"L'Étudiant",     icon:'📰', url:`https://www.letudiant.fr/jobsstages/nos-offres-de-stages-et-alternances.html?motsCles=${qAlt}` },
-    { name:'APEC',            icon:'🏢', url:`https://www.apec.fr/candidat/recherche-emploi.html/emploi?motsCles=${q}&typeContrat=6` },
-    { name:'Cadremploi',      icon:'📊', url:`https://www.cadremploi.fr/emploi/liste_offres.aspx?k=${qAlt}` },
-    { name:'Jobteaser',       icon:'🎯', url:`https://www.jobteaser.com/fr/jobs?q=${qAlt}` },
-  ];
-
-  const UK = [
-    { name:'Indeed UK',         icon:'🔷', url:`https://uk.indeed.com/jobs?q=${qUK}&l=United+Kingdom` },
-    { name:'LinkedIn UK',       icon:'💼', url:`https://www.linkedin.com/jobs/search/?keywords=${qUK}&location=United+Kingdom` },
-    { name:'Gradcracker',       icon:'🎓', url:`https://www.gradcracker.com/search/all-disciplines/internship-placements?keyword=${q}` },
-    { name:'Milkround',         icon:'🥛', url:`https://www.milkround.com/jobs/search?q=${qUK}&location=United+Kingdom` },
-    { name:'Prospects.ac.uk',   icon:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', url:`https://www.prospects.ac.uk/jobs-and-work-experience/job-sectors/business-management-and-human-resources?keywords=${q}` },
-  ];
-
-  const BDX = [
-    { name:'Indeed Bordeaux',  icon:'🔷', url:`https://fr.indeed.com/jobs?q=${qWE}&l=Bordeaux` },
-    { name:'StudentJob',       icon:'📚', url:`https://www.studentjob.fr/offres-d-emploi?keyword=${q}&location=Bordeaux` },
-    { name:'JobEtudiant',      icon:'🧑‍🎓', url:`https://www.jobetudiant.net/etudiant/offres-emploi/?search=${encodeURIComponent(poste + ' Bordeaux')}` },
-    { name:'Jooble',           icon:'🟠', url:`https://fr.jooble.org/emploi-${q}/Bordeaux` },
-    { name:"France Travail",   icon:'🏛️', url:`https://candidat.francetravail.fr/offres/recherche?motsCles=${q}&lieuTravail=Bordeaux` },
-  ];
-
-  let list = [];
-  if (zone === 'all' || zone === 'alternance-fr') FR.forEach(p => list.push({...p, type:'alternance', zone:'🇫🇷 France entière'}));
-  if (zone === 'all' || zone === 'alternance-uk') UK.forEach(p => list.push({...p, type:'uk',        zone:'🇬🇧 Angleterre'}));
-  if (zone === 'all' || zone === 'weekend')       BDX.forEach(p => list.push({...p, type:'weekend',  zone:'🍷 Bordeaux'}));
-  return list;
+function setStatus(s, btn) {
+  currentStatus = s;
+  document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('sel-bon','sel-moyen','sel-mauvais','sel-irreparable'));
+  const map = { bon:'sel-bon', moyen:'sel-moyen', mauvais:'sel-mauvais', irreparable:'sel-irreparable', reparable:'sel-moyen' };
+  btn.classList.add(map[s]||'sel-moyen');
 }
 
-function loadJobs() {
-  const poste = document.getElementById('search-poste').value.trim() || 'Commerce International';
-  const zone  = document.getElementById('search-zone').value;
-  const platforms = getPlatforms(poste, zone);
-
-  document.getElementById('jobs-list').innerHTML = platforms.map(p => {
-    const badgeClass = p.type === 'alternance' ? 'badge-alt' : p.type === 'uk' ? 'badge-uk' : 'badge-we';
-    const badgeLabel = p.type === 'alternance' ? 'Alternance FR' : p.type === 'uk' ? 'Alternance UK' : 'Job WE';
-    return `
-    <div class="job-card ${p.type}">
-      <div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
-          <span class="job-title">${poste}</span>
-          <span class="badge ${badgeClass}">${badgeLabel}</span>
-        </div>
-        <div class="job-meta">
-          <span>${p.zone}</span>
-          <span>${p.icon} ${p.name}</span>
-        </div>
-      </div>
-      <div class="job-actions">
-        <button class="btn btn-outline" onclick="quickAdd('${poste.replace(/'/g,"\\'")}','${p.name}','${p.type}','${p.url.replace(/'/g,"\\'")}')">+ Tracker</button>
-        <a href="${p.url}" target="_blank" rel="noopener"><button class="btn btn-primary">Postuler →</button></a>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function quickAdd(title, company, type, link) {
-  candidatures.push({ id: Date.now(), poste: title, entreprise: company, type, link, status: 'envoye', date: new Date().toLocaleDateString('fr-FR') });
-  save(); updateStats();
-  showToast('✅ Ajouté au tracker !');
-}
-
-function renderTracker() {
-  STATUSES.forEach(st => {
-    const cards = candidatures.filter(c => c.status === st);
-    document.getElementById(`cnt-${st}`).textContent = cards.length;
-    document.getElementById(`col-${st}-cards`).innerHTML = cards.length === 0
-      ? '<div class="empty-col">Aucune</div>'
-      : cards.map(c => cardHTML(c, st)).join('');
+function addPhotos(e) {
+  Array.from(e.target.files).forEach(f => {
+    const r = new FileReader();
+    r.onload = ev => { currentPhotos.push({ name: f.name, data: ev.target.result }); renderThumbs(); };
+    r.readAsDataURL(f);
   });
 }
 
-function cardHTML(c, status) {
-  const prev = STATUSES[STATUSES.indexOf(status) - 1];
-  const next = STATUSES[STATUSES.indexOf(status) + 1];
-  const bc = c.type === 'alternance' ? 'badge-alt' : c.type === 'uk' ? 'badge-uk' : 'badge-we';
-  const bl = c.type === 'alternance' ? 'Alt.FR' : c.type === 'uk' ? 'UK' : 'WE';
-  return `<div class="card">
-    <div class="card-title">${c.poste}</div>
-    <div class="card-company">${c.entreprise} <span class="badge ${bc}" style="font-size:0.65rem;padding:2px 7px;">${bl}</span></div>
-    <div class="card-footer">
-      <div>
-        <div class="card-date">📅 ${c.date}</div>
-        ${c.link ? `<a href="${c.link}" target="_blank" style="font-size:0.75rem;color:var(--accent);text-decoration:none;">🔗 Voir l'offre</a>` : ''}
+function renderThumbs() {
+  const g = document.getElementById('photo-grid');
+  g.innerHTML = currentPhotos.map((p,i) => `
+    <div class="photo-thumb">
+      <img src="${p.data}" alt="${p.name}" onclick="openLightbox('${p.data.replace(/'/g,"\\'")}')">
+      <button class="photo-del" onclick="removePhoto(${i})"><i class="ti ti-x" style="font-size:10px"></i></button>
+    </div>`).join('');
+  document.getElementById('photo-count').textContent = currentPhotos.length ? `${currentPhotos.length} photo(s) ajoutée(s)` : '';
+}
+
+function removePhoto(i) { currentPhotos.splice(i,1); renderThumbs(); }
+
+function saveProduct() {
+  const name = document.getElementById('f-name').value.trim();
+  if(!name) { alert('Merci de renseigner le nom du produit.'); return; }
+  const p = {
+    ref: document.getElementById('f-ref').value.trim() || ('SAV-'+Date.now()),
+    date: document.getElementById('f-date').value || new Date().toISOString().slice(0,10),
+    name,
+    brand: document.getElementById('f-brand').value.trim(),
+    serial: document.getElementById('f-serial').value.trim(),
+    client: document.getElementById('f-client').value.trim(),
+    tech: document.getElementById('f-tech').value.trim(),
+    status: currentStatus || 'non défini',
+    problem: document.getElementById('f-prob').value.trim(),
+    action: document.getElementById('f-action').value.trim(),
+    notes: document.getElementById('f-notes').value.trim(),
+    photos: currentPhotos.slice(),
+    createdAt: new Date().toISOString()
+  };
+  if(editIndex >= 0) { products[editIndex] = p; editIndex = -1; } else { products.unshift(p); }
+  save();
+  resetForm();
+  updateTopCount();
+  switchTab('list');
+}
+
+function resetForm() {
+  ['f-ref','f-date','f-name','f-brand','f-serial','f-client','f-tech','f-prob','f-action','f-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  currentStatus = ''; currentPhotos = [];
+  document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('sel-bon','sel-moyen','sel-mauvais','sel-irreparable'));
+  renderThumbs();
+  editIndex = -1;
+  document.querySelector('.btn-primary').innerHTML = '<i class="ti ti-device-floppy"></i> Enregistrer le produit SAV';
+}
+
+function updateTopCount() {
+  const n = products.length;
+  document.getElementById('top-count').textContent = n + (n>1 ? ' produits' : ' produit');
+  document.getElementById('count-badge').textContent = n ? `(${n})` : '';
+}
+
+function formatDate(d) {
+  if(!d) return '—';
+  const [y,m,j] = d.split('-');
+  return `${j}/${m}/${y}`;
+}
+
+function renderStats() {
+  const counts = { bon:0, moyen:0, mauvais:0, irreparable:0, reparable:0 };
+  products.forEach(p => { if(counts[p.status]!==undefined) counts[p.status]++; });
+  const total = products.length;
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><p class="stat-label">Total</p><p class="stat-val">${total}</p></div>
+    <div class="stat-card"><p class="stat-label">Réparables</p><p class="stat-val" style="color:#3B6D11">${counts.bon+counts.reparable}</p></div>
+    <div class="stat-card"><p class="stat-label">Mauvais état</p><p class="stat-val" style="color:#854F0B">${counts.mauvais+counts.moyen}</p></div>
+    <div class="stat-card"><p class="stat-label">Irréparables</p><p class="stat-val" style="color:#791F1F">${counts.irreparable}</p></div>
+  `;
+}
+
+function renderList() {
+  renderStats();
+  const q = (document.getElementById('search-input').value||'').toLowerCase();
+  const filtered = products.filter(p =>
+    p.name.toLowerCase().includes(q) ||
+    p.ref.toLowerCase().includes(q) ||
+    (p.client||'').toLowerCase().includes(q)
+  );
+  const el = document.getElementById('prod-list');
+  if(!filtered.length) {
+    el.innerHTML = `<div class="empty"><i class="ti ti-inbox"></i><p>${q ? 'Aucun résultat pour "'+q+'"' : 'Aucun produit enregistré'}</p></div>`;
+    return;
+  }
+  el.innerHTML = filtered.map((p) => {
+    const i = products.indexOf(p);
+    return `<div class="prod-card" onclick="showDetail(${i})">
+      <div class="prod-icon"><i class="ti ti-package"></i></div>
+      <div class="prod-info">
+        <div class="prod-name">${p.name}</div>
+        <div class="prod-sub">${p.ref} · ${p.client||'Client non renseigné'} · ${formatDate(p.date)}${p.photos&&p.photos.length?` · <i class="ti ti-photo" style="font-size:12px"></i> ${p.photos.length}`:''}</div>
       </div>
-      <div class="card-move">
-        ${prev ? `<button class="mini-btn" title="Reculer" onclick="moveCard(${c.id},'${prev}')">←</button>` : ''}
-        ${next ? `<button class="mini-btn" title="Avancer" onclick="moveCard(${c.id},'${next}')">→</button>` : ''}
-        <button class="mini-btn danger" title="Supprimer" onclick="deleteCard(${c.id})">✕</button>
+      <span class="badge ${badgeClass[p.status]||'b-moyen'}">${statusLabel[p.status]||p.status}</span>
+      <div class="prod-actions" onclick="event.stopPropagation()">
+        <button class="icon-btn" title="Modifier" onclick="editProduct(${i})"><i class="ti ti-edit"></i></button>
+        <button class="icon-btn" title="Rapport" onclick="goReport(${i})"><i class="ti ti-file-description"></i></button>
+        <button class="icon-btn" title="Supprimer" onclick="deleteProduct(${i})"><i class="ti ti-trash"></i></button>
       </div>
-    </div>
+    </div>`;
+  }).join('');
+  updateTopCount();
+}
+
+function deleteProduct(i) {
+  if(!confirm('Supprimer ce produit ?')) return;
+  products.splice(i,1); save(); renderList();
+}
+
+function editProduct(i) {
+  const p = products[i];
+  editIndex = i;
+  document.getElementById('f-ref').value = p.ref;
+  document.getElementById('f-date').value = p.date;
+  document.getElementById('f-name').value = p.name;
+  document.getElementById('f-brand').value = p.brand||'';
+  document.getElementById('f-serial').value = p.serial||'';
+  document.getElementById('f-client').value = p.client||'';
+  document.getElementById('f-tech').value = p.tech||'';
+  document.getElementById('f-prob').value = p.problem||'';
+  document.getElementById('f-action').value = p.action||'';
+  document.getElementById('f-notes').value = p.notes||'';
+  currentStatus = p.status;
+  currentPhotos = (p.photos||[]).slice();
+  renderThumbs();
+  document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('sel-bon','sel-moyen','sel-mauvais','sel-irreparable'));
+  const map = { bon:'sel-bon', moyen:'sel-moyen', mauvais:'sel-mauvais', irreparable:'sel-irreparable', reparable:'sel-moyen' };
+  document.querySelectorAll('.status-btn').forEach(b => {
+    if(b.textContent.includes(statusLabel[p.status]||p.status)) b.classList.add(map[p.status]||'sel-moyen');
+  });
+  document.querySelector('.btn-primary').innerHTML = '<i class="ti ti-pencil"></i> Mettre à jour le produit';
+  switchTab('form');
+  window.scrollTo(0, 0);
+}
+
+function showDetail(i) {
+  const p = products[i];
+  document.getElementById('modal-title').textContent = p.name;
+  const rows = [
+    ['Référence', p.ref], ['Date de retour', formatDate(p.date)],
+    ['Marque', p.brand||'—'], ['N° de série', p.serial||'—'],
+    ['Client', p.client||'—'], ['Technicien', p.tech||'—'],
+    ['État', `<span class="badge ${badgeClass[p.status]||'b-moyen'}">${statusLabel[p.status]||p.status}</span>`],
+    ['Problème', p.problem||'—'], ['Action', p.action||'—'], ['Notes', p.notes||'—'],
+  ];
+  let html = rows.map(([l,v]) => `<div class="detail-row"><span class="detail-label">${l}</span><span class="detail-val">${v}</span></div>`).join('');
+  if(p.photos && p.photos.length) {
+    html += `<p style="font-size:12px;color:var(--text-sec);margin:14px 0 8px"><i class="ti ti-photo"></i> ${p.photos.length} photo(s)</p>
+    <div class="detail-photos">${p.photos.map(ph=>`<img src="${ph.data}" alt="${ph.name}" onclick="openLightbox('${ph.data.replace(/'/g,"\\'")}')">`).join('')}</div>`;
+  }
+  html += `<div class="modal-action-btns">
+    <button onclick="closeModal();editProduct(${i})"><i class="ti ti-edit"></i> Modifier</button>
+    <button onclick="closeModal();goReport(${i})"><i class="ti ti-file-description"></i> Rapport</button>
+    <button class="btn-del" onclick="closeModal();deleteProduct(${i})"><i class="ti ti-trash"></i> Supprimer</button>
   </div>`;
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('detail-modal').style.display = 'block';
 }
 
-function moveCard(id, s) { const c = candidatures.find(x=>x.id===id); if(c){c.status=s;save();renderTracker();updateStats();} }
-function deleteCard(id) { candidatures=candidatures.filter(x=>x.id!==id); save();renderTracker();updateStats(); }
-function openAddModal() { document.getElementById('add-modal').classList.add('show'); }
-function closeAddModal() { document.getElementById('add-modal').classList.remove('show'); }
-function addCandidature() {
-  const poste = document.getElementById('m-poste').value.trim();
-  const entreprise = document.getElementById('m-entreprise').value.trim();
-  if (!poste || !entreprise) return;
-  candidatures.push({ id: Date.now(), poste, entreprise, type: document.getElementById('m-type').value, link: document.getElementById('m-link').value.trim(), status: 'envoye', date: new Date().toLocaleDateString('fr-FR') });
-  save(); renderTracker(); updateStats(); closeAddModal();
-  ['m-poste','m-entreprise','m-link'].forEach(id => document.getElementById(id).value = '');
+function closeModal() { document.getElementById('detail-modal').style.display = 'none'; }
+function closeModalBg(e) { if(e.target.classList.contains('modal-bg')) closeModal(); }
+document.addEventListener('keydown', e => { if(e.key==='Escape') { closeModal(); document.getElementById('lightbox').style.display='none'; }});
+
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').style.display = 'flex';
 }
 
-// ── LM ──
-const PROFILE = `PROFIL : Hounzandji Yvann, 22 ans, né le 01/06/2003, Lormont (33), Permis B véhiculé.
-FORMATION : BTS Management Commerce Opérationnel (Pigier Bègles, 2024-2026). Prépare un Bachelor Commerce International à l'ESG Bordeaux (2026-2027). Bac Pro MELEC (Gustave Eiffel, 2021-2024).
-EXPÉRIENCES :
-- Business Developer en alternance chez Koneksun, Bordeaux (depuis sept. 2024) : prospection commerciale terrain auprès de particuliers, conseil et accompagnement client, gestion CRM Odoo, élaboration de devis, analyse rentabilité solaire.
-- Installateur panneaux photovoltaïques en alternance chez Solatech, Bordeaux (2021-2024) : installation et mise en service, dimensionnement PV*SOL, calepinage K2 Base, SAV, démarches administratives (Mairie, Enedis, Consuel).
-- Agent de médiation culturelle, Galerie des Beaux-Arts Bordeaux (avr-déc 2023).
-COMPÉTENCES : Prospection & vente terrain, CRM Odoo, SMO/SMA/SEO/SEA, aisance relationnelle, sens commercial, autonomie, organisation, esprit d'initiative, goût du challenge.
-LANGUES : Français natif, Anglais B1.
-RYTHME ALTERNANCE : 3 jours entreprise / 2 jours formation.`;
-
-async function generateLM() {
-  const poste = document.getElementById('lm-poste').value.trim();
-  const entreprise = document.getElementById('lm-entreprise').value.trim();
-  if (!poste || !entreprise) { alert('Merci de remplir le poste et l\'entreprise !'); return; }
-  const type = document.getElementById('lm-type').value;
-  const secteur = document.getElementById('lm-secteur').value.trim();
-  const skills = document.getElementById('lm-skills').value.trim();
-
-  document.getElementById('lm-spinner').style.display = 'inline-block';
-  document.getElementById('lm-result').innerHTML = '<div class="lm-placeholder"><span class="spinner"></span><span>Génération en cours...</span></div>';
-
-  const prompt = `Tu es un expert en recrutement français. Génère une lettre de motivation professionnelle, percutante et authentique en français.
-
-${PROFILE}
-
-CANDIDATURE :
-- Poste visé : ${poste}
-- Entreprise : ${entreprise}
-${secteur ? `- Secteur/activité : ${secteur}` : ''}
-- Type de contrat : ${type}
-- Compétences à valoriser : ${skills}
-
-CONSIGNES STRICTES :
-- 280 à 320 mots maximum
-- Accroche originale et forte (ne PAS commencer par "Je me permets de vous contacter" ou "Actuellement étudiant")
-- Montre une vraie motivation pour CETTE entreprise (fais preuve de créativité)
-- Valorise le parcours atypique électricien → commercial → commerce international comme une force
-- Ton dynamique, professionnel, avec de la personnalité
-- Mentionne le rythme 3j/2j si c'est une alternance
-- Commence DIRECTEMENT par la lettre, sans aucune introduction ni commentaire`;
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
-    });
-    const data = await res.json();
-    const text = data.content?.map(b => b.text || '').join('') || 'Erreur lors de la génération.';
-    document.getElementById('lm-result').textContent = text;
-  } catch(e) {
-    document.getElementById('lm-result').innerHTML = '<div class="lm-placeholder" style="color:var(--accent2)">❌ Erreur réseau. Réessaie.</div>';
-  } finally {
-    document.getElementById('lm-spinner').style.display = 'none';
+function renderReportPicker() {
+  const sel = document.getElementById('report-picker');
+  const val = sel.value;
+  sel.innerHTML = '<option value="">-- Choisir un produit --</option>' + products.map((p,i) => `<option value="${i}">${p.ref} — ${p.name}</option>`).join('');
+  sel.value = val;
+  if(!products.length) {
+    document.getElementById('report-output').style.display = 'none';
+    document.getElementById('report-empty').style.display = 'block';
   }
 }
 
-async function copyLM() {
-  const text = document.getElementById('lm-result').textContent;
-  if (!text || text.includes('Remplis le poste')) return;
-  try {
-    await navigator.clipboard.writeText(text);
-    const msg = document.getElementById('lm-success');
-    msg.style.display = 'block';
-    setTimeout(() => msg.style.display = 'none', 2500);
-  } catch(e) {}
+function generateReport() {
+  const i = document.getElementById('report-picker').value;
+  if(i==='') { document.getElementById('report-output').style.display='none'; document.getElementById('report-empty').style.display='block'; return; }
+  const p = products[parseInt(i)];
+  const sep = '━'.repeat(52);
+  const now = new Date();
+  const lines = [
+    `RAPPORT SAV`,
+    sep,
+    `Référence dossier  : ${p.ref}`,
+    `Date de retour     : ${formatDate(p.date)}`,
+    `Rapport généré le  : ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`,
+    sep,
+    `PRODUIT`,
+    `  Désignation      : ${p.name}`,
+    `  Marque           : ${p.brand||'—'}`,
+    `  N° de série      : ${p.serial||'—'}`,
+    sep,
+    `CLIENT & INTERVENANT`,
+    `  Client           : ${p.client||'—'}`,
+    `  Technicien SAV   : ${p.tech||'—'}`,
+    sep,
+    `ÉTAT DU PRODUIT    : ${(statusLabel[p.status]||p.status).toUpperCase()}`,
+    sep,
+    `PROBLÈME CONSTATÉ`,
+    p.problem ? p.problem.split('\n').map(l=>'  '+l).join('\n') : '  (non renseigné)',
+    '',
+    `ACTION RÉALISÉE / PRÉCONISÉE`,
+    p.action ? p.action.split('\n').map(l=>'  '+l).join('\n') : '  (non renseignée)',
+    '',
+    `NOTES INTERNES`,
+    p.notes ? p.notes.split('\n').map(l=>'  '+l).join('\n') : '  (aucune)',
+    sep,
+    `Pièces jointes     : ${(p.photos||[]).length} photo(s)`,
+    sep,
+  ];
+  document.getElementById('report-content').textContent = lines.join('\n');
+  document.getElementById('report-output').style.display = 'block';
+  document.getElementById('report-empty').style.display = 'none';
 }
 
-function showToast(msg) {
-  const t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1a1a26;border:1px solid #2a2a3a;color:#e8e8f0;padding:12px 24px;border-radius:100px;font-size:0.88rem;z-index:999;';
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
+function goReport(i) {
+  switchTab('reports');
+  setTimeout(() => { document.getElementById('report-picker').value = i; generateReport(); }, 50);
 }
 
-function save() { localStorage.setItem('jobflow_yvann', JSON.stringify(candidatures)); }
-function updateStats() {
-  const alt = candidatures.filter(c => c.type === 'alternance' || c.type === 'uk').length;
-  const we  = candidatures.filter(c => c.type === 'weekend').length;
-  document.getElementById('stat-alt').textContent   = `${alt} alternance${alt > 1 ? 's' : ''}`;
-  document.getElementById('stat-we').textContent    = `${we} job${we > 1 ? 's' : ''} WE`;
-  document.getElementById('stat-total').textContent = `${candidatures.length} candidature${candidatures.length > 1 ? 's' : ''}`;
+function copyReport() {
+  navigator.clipboard.writeText(document.getElementById('report-content').textContent)
+    .then(() => alert('Rapport copié !'));
 }
 
-updateStats();
-loadJobs();
+function printReport() {
+  const txt = document.getElementById('report-content').textContent;
+  const w = window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rapport SAV</title><style>body{font-family:monospace;font-size:13px;padding:2rem;line-height:1.8}pre{white-space:pre-wrap}</style></head><body><pre>${txt.replace(/</g,'&lt;')}</pre></body></html>`);
+  w.document.close(); w.print();
+}
+
+function exportTxt() {
+  const txt = document.getElementById('report-content').textContent;
+  const ref = document.getElementById('report-picker').selectedOptions[0].text.split('—')[0].trim();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain' }));
+  a.download = `rapport-sav-${ref}.txt`;
+  a.click();
+}
+
+document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+updateTopCount();
 </script>
 </body>
 </html>
